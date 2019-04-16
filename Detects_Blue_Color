@@ -1,0 +1,64 @@
+/*
+Author:Rakshit Grover
+15-04-2017
+Objective: Detects blue color .
+Library used : OpenCV
+....................................................
+
+Before executing the code directly you need to start your Rpi camera and import it's libraries for it to be compatible.
+Happy coding !
+*/
+
+import io
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import sys
+sys.path.append('/usr/local/lib/python2.7/site-packages')               //setting up path for your python packages(will be different for
+import cv2                                                              //your system).
+import numpy as np
+from motors import main
+
+camera = PiCamera()
+camera.resolution = (640, 480)                                        // setting up camera resolution
+camera.framerate = 32
+rawCapture = PiRGBArray(camera, size=(640, 480))
+
+time.sleep(0.1)                                                      //a small delay to let the camera wakeup
+
+for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        image = frame.array
+  
+        
+        hsv = cv2.cvtColor(image,cv2.COLOR_BGR2HSV)                             //conversion from blue-red-green(BGR) to hue-saturation-value(HSV)
+
+        lower_range = np.array([110,50,50])                                          //these ranges are for blue color 
+        upper_range = np.array([130,255,255])                                       //for a diffrent color , change the range
+
+        mask = cv2.inRange(hsv, lower_range, upper_range)
+
+        cv2.imshow("Frame",image)                              
+        key = cv2.waitKey(1) & 0xFF
+
+        result = cv2.bitwise_and(image,image,mask=mask)
+        for i in range(0, result.width):
+                for j in range(0, result.height):
+                        if result[i][j] == 1:
+                                flag = 1
+                        else:
+                                flag = 0
+                break
+
+        cv2.imshow("Result",result)                           //showing up the result and detecting only blue regions
+        key = cv2.waitKey(1) & 0xFF
+
+        if flag == 1:
+                try:
+                        main()
+                except:
+                        pass
+        
+        rawCapture.truncate(0)
+        if key == ord("q"):
+                break
+cv2.destroyAllWindows()
